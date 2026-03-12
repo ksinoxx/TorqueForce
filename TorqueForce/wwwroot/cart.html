@@ -1,0 +1,155 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Корзина</title>
+    <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container nav">
+            <div class="nav-left">
+                <span class="brand"><a href="/index.html">Torque//Force</a></span>
+                <a href="/catalog.html">Каталог</a>
+                <a href="/cart.html">Корзина <span id="cartBadge" class="badge">0</span></a>
+                <a href="/admin-orders.html">Админ: заказы</a>
+            </div>
+            <span class="muted">localStorage</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>Корзина</h1>
+
+            <div id="msg" class="toast" style="display:none;"></div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Запчасть</th>
+                        <th style="width:120px;">Цена</th>
+                        <th style="width:140px;">Кол-во</th>
+                        <th style="width:140px;">Сумма</th>
+                        <th style="width:120px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
+
+            <div class="hr"></div>
+
+            <div class="row">
+                <div class="card">
+                    <h2>Итого</h2>
+                    <div><b id="total">0</b></div>
+                    <div class="hr"></div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <a class="btn btn-secondary" href="/catalog.html">В каталог</a>
+                        <button class="btn btn-danger" onclick="clearCart()">Очистить</button>
+                        <a class="btn" href="/checkout.html">Оформить заказ</a>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Подсказка</h2>
+                    <p class="muted">
+                        Корзина хранится в браузере. Заказ создаётся только на странице “Оформление”.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+  const CART_KEY = "cart_v1";
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
+    catch { return []; }
+  }
+  function saveCart(cart) {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    render();
+  }
+  function updateBadge() {
+    const count = getCart().reduce((s, x) => s + (x.quantity || 0), 0);
+    document.getElementById("cartBadge").textContent = count;
+  }
+  function showMsg(text, isError=false) {
+    const el = document.getElementById("msg");
+    el.className = "toast" + (isError ? " error" : "");
+    el.textContent = text;
+    el.style.display = "block";
+  }
+
+  function setQty(partId, qty) {
+    qty = Math.max(1, Number(qty || 1));
+    const cart = getCart().map(x => x.partId === partId ? { ...x, quantity: qty } : x);
+    saveCart(cart);
+  }
+
+  function removeItem(partId) {
+    const cart = getCart().filter(x => x.partId !== partId);
+    saveCart(cart);
+  }
+
+  function clearCart() {
+    localStorage.removeItem(CART_KEY);
+    render();
+    showMsg("Корзина очищена");
+  }
+
+  function formatMoney(v) {
+    const n = Number(v || 0);
+    return n.toLocaleString("ru-RU", { style: "currency", currency: "RUB" });
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"'," &quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function render() {
+    const cart = getCart();
+    updateBadge();
+
+    const tbody = document.getElementById("rows");
+    if (!cart.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">Корзина пуста</td></tr>`;
+      document.getElementById("total").textContent = formatMoney(0);
+      return;
+    }
+
+    let total = 0;
+    tbody.innerHTML = cart.map(x => {
+      const sum = Number(x.price || 0) * Number(x.quantity || 0);
+      total += sum;
+
+      return `
+        <tr>
+          <td><b>${escapeHtml(x.partName)}</b><div class="muted">ID: ${x.partId}</div></td>
+          <td>${formatMoney(x.price)}</td>
+          <td>
+            <input class="input small" type="number" min="1" value="${x.quantity}"
+              onchange="setQty(${x.partId}, this.value)">
+          </td>
+          <td>${formatMoney(sum)}</td>
+          <td>
+            <button class="btn btn-danger" onclick="removeItem(${x.partId})">Удалить</button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    document.getElementById("total").textContent = formatMoney(total);
+  }
+
+  render();
+    </script>
+</body>
+</html>

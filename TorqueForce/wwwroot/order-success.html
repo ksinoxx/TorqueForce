@@ -1,0 +1,43 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Заказ оформлен</title>
+    <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container nav">
+            <div class="nav-left">
+                <span class="brand"><a href="/index.html">Torque//Force</a></span>
+                <a href="/catalog.html">Каталог</a>
+                <a href="/cart.html">Корзина <span id="cartBadge" class="badge">0</span></a>
+                <a href="/admin-orders.html">Админ: заказы</a>
+            </div>
+            <span class="muted">Готово</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>Заказ оформлен</h1>
+            <p>Номер заказа: <b id="id">—</b></p>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <a class="btn" href="/catalog.html">В каталог</a>
+                <a class="btn btn-secondary" href="/admin-orders.html">Админ: посмотреть заказ</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+  const CART_KEY = "cart_v1";
+  function getCart(){ try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
+  document.getElementById("cartBadge").textContent = getCart().reduce((s,x)=>s+(x.quantity||0),0);
+
+  const p = new URLSearchParams(location.search);
+  document.getElementById("id").textContent = p.get("id") || "—";
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Магазин автозапчастей</title>
+    <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container nav">
+            <div class="nav-left">
+                <span class="brand">Torque//Force</span>
+                <a href="/catalog.html">Каталог</a>
+                <a href="/cart.html">Корзина <span id="cartBadge" class="badge">0</span></a>
+                <a href="/admin-orders.html">Админ: заказы</a>
+            </div>
+            <span class="muted">Статический HTML + API</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>Магазин автозапчастей</h1>
+            <p class="muted">
+                Это статический сайт. Данные подгружаются из базы через API.
+            </p>
+
+            <div class="row">
+                <div class="card">
+                    <h2>Покупателю</h2>
+                    <p><a class="btn" href="/catalog.html">Открыть каталог</a></p>
+                    <p><a class="btn btn-secondary" href="/cart.html">Перейти в корзину</a></p>
+                </div>
+
+                <div class="card">
+                    <h2>Сотруднику</h2>
+                    <p><a class="btn" href="/admin-orders.html">Открыть админку заказов</a></p>
+                    <p class="muted">Там можно менять статусы: Принят → В обработке → Выдан</p>
+                </div>
+            </div>
+
+            <div id="msg" class="toast" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+  const CART_KEY = "cart_v1";
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
+    catch { return []; }
+  }
+  function cartCount() {
+    return getCart().reduce((s, x) => s + (x.quantity || 0), 0);
+  }
+  document.getElementById("cartBadge").textContent = cartCount();
+    </script>
+</body>
+</html>

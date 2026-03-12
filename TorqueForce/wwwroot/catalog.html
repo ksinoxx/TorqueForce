@@ -1,0 +1,159 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Каталог запчастей</title>
+    <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container nav">
+            <div class="nav-left">
+                <span class="brand"><a href="/index.html">Torque//Force</a></span>
+                <a href="/catalog.html">Каталог</a>
+                <a href="/cart.html">Корзина <span id="cartBadge" class="badge">0</span></a>
+                <a href="/admin-orders.html">Админ: заказы</a>
+            </div>
+            <span class="muted">/api/parts</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>Каталог</h1>
+
+            <div class="row">
+                <div>
+                    <input id="q" class="input" placeholder="Поиск по названию..." />
+                </div>
+                <div style="max-width:160px;">
+                    <button class="btn btn-secondary" onclick="loadParts()">Обновить</button>
+                </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div id="msg" class="toast" style="display:none;"></div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th style="width:120px;">Цена</th>
+                        <th style="width:110px;">Склад</th>
+                        <th style="width:240px;">Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="rows">
+                    <tr><td colspan="4" class="muted">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+  const CART_KEY = "cart_v1";
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
+    catch { return []; }
+  }
+  function saveCart(cart) {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    updateBadge();
+  }
+  function updateBadge() {
+    const count = getCart().reduce((s, x) => s + (x.quantity || 0), 0);
+    document.getElementById("cartBadge").textContent = count;
+  }
+
+  function showMsg(text, isError=false) {
+    const el = document.getElementById("msg");
+    el.className = "toast" + (isError ? " error" : "");
+    el.textContent = text;
+    el.style.display = "block";
+  }
+
+  function addToCart(part, qty) {
+    qty = Math.max(1, Number(qty || 1));
+    const cart = getCart();
+    const idx = cart.findIndex(x => x.partId === part.partId);
+    if (idx >= 0) cart[idx].quantity += qty;
+    else cart.push({ partId: part.partId, partName: part.partName, price: part.price, quantity: qty });
+
+    saveCart(cart);
+    showMsg(`Добавлено в корзину: ${part.partName} (x${qty})`);
+  }
+
+  async function loadParts() {
+    const tbody = document.getElementById("rows");
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Загрузка...</td></tr>`;
+    document.getElementById("msg").style.display = "none";
+
+    try {
+      const res = await fetch("/api/parts", { headers: { "Accept": "application/json" } });
+      if (!res.ok) throw new Error("API /api/parts вернул " + res.status);
+
+      let parts = await res.json();
+
+      const q = (document.getElementById("q").value || "").trim().toLowerCase();
+      if (q) parts = parts.filter(p => (p.partName || "").toLowerCase().includes(q));
+
+      if (!parts.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">Ничего не найдено</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = parts.map(p => `
+        <tr>
+          <td>
+            <a href="/admin-order.html?id=${encodeURIComponent(p.partId)}" style="display:none"></a>
+            <b>${escapeHtml(p.partName)}</b>
+            <div class="muted">ID: ${p.partId}</div>
+          </td>
+          <td>${formatMoney(p.price)}</td>
+          <td>${p.stock}</td>
+          <td>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input class="input small" type="number" min="1" value="1" id="qty_${p.partId}">
+              <button class="btn" ${p.stock <= 0 ? "disabled" : ""} onclick='onAdd(${JSON.stringify(p).replaceAll("'","\\'")})'>
+                В корзину
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="4" class="muted">Ошибка загрузки</td></tr>`;
+      showMsg(String(e.message || e), true);
+    }
+  }
+
+  function onAdd(part) {
+    const qty = document.getElementById("qty_" + part.partId).value;
+    addToCart(part, qty);
+  }
+
+  function formatMoney(v) {
+    const n = Number(v || 0);
+    return n.toLocaleString("ru-RU", { style: "currency", currency: "RUB" });
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  document.getElementById("q").addEventListener("input", () => loadParts());
+
+  updateBadge();
+  loadParts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+﻿:root {
+    --maxw: 1100px;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #0b1220;
+    color: #e7eefc;
+}
+
+a {
+    color: #9cc3ff;
+    text-decoration: none;
+}
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+.container {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.header {
+    background: #0f1b33;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.nav {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-left {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+.brand {
+    font-weight: 700;
+    letter-spacing: .2px;
+}
+
+.badge {
+    background: #1d2b4d;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+.card {
+    background: #0f1b33;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+    .row > * {
+        flex: 1;
+    }
+
+h1, h2 {
+    margin: 10px 0 12px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+    .table th, .table td {
+        padding: 10px;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+        vertical-align: middle;
+    }
+
+    .table th {
+        text-align: left;
+        background: rgba(255,255,255,.04);
+    }
+
+    .table tr:hover td {
+        background: rgba(255,255,255,.03);
+    }
+
+.btn {
+    background: #2b6fff;
+    border: 0;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+    .btn:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+.btn-secondary {
+    background: #1d2b4d;
+}
+
+.btn-danger {
+    background: #e25555;
+}
+
+.input, select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: #0b1220;
+    color: #e7eefc;
+    outline: none;
+}
+
+.small {
+    width: 90px;
+}
+
+.muted {
+    opacity: .8;
+}
+
+.hr {
+    height: 1px;
+    background: rgba(255,255,255,.10);
+    margin: 12px 0;
+}
+
+.toast {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(43,111,255,.12);
+    border: 1px solid rgba(43,111,255,.25);
+}
+
+    .toast.error {
+        background: rgba(226,85,85,.12);
+        border: 1px solid rgba(226,85,85,.25);
+    }

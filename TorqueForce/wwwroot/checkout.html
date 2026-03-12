@@ -1,0 +1,157 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Оформление заказа</title>
+    <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container nav">
+            <div class="nav-left">
+                <span class="brand"><a href="/index.html">Torque//Force</a></span>
+                <a href="/catalog.html">Каталог</a>
+                <a href="/cart.html">Корзина <span id="cartBadge" class="badge">0</span></a>
+                <a href="/admin-orders.html">Админ: заказы</a>
+            </div>
+            <span class="muted">POST /api/orders</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>Оформление заказа</h1>
+
+            <div id="msg" class="toast" style="display:none;"></div>
+
+            <div class="row">
+                <div class="card">
+                    <h2>Контакты</h2>
+                    <div style="display:grid; gap:10px;">
+                        <input id="name" class="input" placeholder="Имя" />
+                        <input id="phone" class="input" placeholder="Телефон" />
+                        <input id="email" class="input" placeholder="Email (необязательно)" />
+                    </div>
+
+                    <div class="hr"></div>
+
+                    <button id="btn" class="btn" onclick="submitOrder()">Подтвердить заказ</button>
+                    <a class="btn btn-secondary" href="/cart.html" style="margin-left:8px;">Назад</a>
+                </div>
+
+                <div class="card">
+                    <h2>Состав заказа</h2>
+                    <div id="summary" class="muted">Загрузка...</div>
+                    <div class="hr"></div>
+                    <div><b>Итого:</b> <span id="total">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+  const CART_KEY = "cart_v1";
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
+    catch { return []; }
+  }
+  function clearCart() { localStorage.removeItem(CART_KEY); }
+  function updateBadge() {
+    const count = getCart().reduce((s, x) => s + (x.quantity || 0), 0);
+    document.getElementById("cartBadge").textContent = count;
+  }
+  function showMsg(text, isError=false) {
+    const el = document.getElementById("msg");
+    el.className = "toast" + (isError ? " error" : "");
+    el.textContent = text;
+    el.style.display = "block";
+  }
+  function formatMoney(v) {
+    const n = Number(v || 0);
+    return n.toLocaleString("ru-RU", { style: "currency", currency: "RUB" });
+  }
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function renderSummary() {
+    const cart = getCart();
+    updateBadge();
+
+    if (!cart.length) {
+      document.getElementById("summary").innerHTML = `<div class="muted">Корзина пуста. <a href="/catalog.html">Перейти в каталог</a></div>`;
+      document.getElementById("total").textContent = formatMoney(0);
+      document.getElementById("btn").disabled = true;
+      return;
+    }
+
+    let total = 0;
+    document.getElementById("summary").innerHTML = cart.map(x => {
+      const sum = Number(x.price || 0) * Number(x.quantity || 0);
+      total += sum;
+      return `<div><b>${escapeHtml(x.partName)}</b> — ${x.quantity} шт. — ${formatMoney(sum)}</div>`;
+    }).join("");
+
+    document.getElementById("total").textContent = formatMoney(total);
+  }
+
+  async function submitOrder() {
+    document.getElementById("msg").style.display = "none";
+
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const email = document.getElementById("email").value.trim();
+
+    if (!name || !phone) {
+      showMsg("Заполните имя и телефон", true);
+      return;
+    }
+
+    const cart = getCart();
+    if (!cart.length) {
+      showMsg("Корзина пуста", true);
+      return;
+    }
+
+    const payload = {
+      client: { name, phone, email: email || null },
+      items: cart.map(x => ({ partId: x.partId, quantity: x.quantity }))
+    };
+
+    const btn = document.getElementById("btn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Ошибка оформления (${res.status}): ${text}`);
+      }
+
+      const data = await res.json();
+      const orderId = data.orderId ?? data.customerOrderId ?? data.id;
+
+      clearCart();
+      window.location.href = `/order-success.html?id=${encodeURIComponent(orderId)}`;
+    } catch (e) {
+      showMsg(String(e.message || e), true);
+      btn.disabled = false;
+    }
+  }
+
+  renderSummary();
+    </script>
+</body>
+</html>

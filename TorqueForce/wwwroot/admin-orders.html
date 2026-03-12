@@ -1,0 +1,155 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Админ — Заказы</title>
+    <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+    <div class="header">
+        <div class="container nav">
+            <div class="nav-left">
+                <span class="brand"><a href="/index.html">Torque//Force</a></span>
+                <a href="/catalog.html">Каталог</a>
+                <a href="/cart.html">Корзина <span id="cartBadge" class="badge">0</span></a>
+                <a href="/admin-orders.html">Админ: заказы</a>
+            </div>
+            <span class="muted">GET /api/admin/orders</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>Заказы (админ)</h1>
+
+            <div class="row">
+                <div>
+                    <button class="btn btn-secondary" onclick="loadOrders()">Обновить</button>
+                </div>
+                <div class="muted" style="text-align:right;">
+                    Статусы: Принят → В обработке → Выдан
+                </div>
+            </div>
+
+            <div id="msg" class="toast" style="display:none;"></div>
+            <div class="hr"></div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width:90px;">ID</th>
+                        <th style="width:190px;">Дата</th>
+                        <th>Клиент</th>
+                        <th style="width:140px;">Сумма</th>
+                        <th style="width:170px;">Статус</th>
+                        <th style="width:260px;">Изменить</th>
+                    </tr>
+                </thead>
+                <tbody id="rows">
+                    <tr><td colspan="6" class="muted">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+  const CART_KEY = "cart_v1";
+  function getCart(){ try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
+  document.getElementById("cartBadge").textContent = getCart().reduce((s,x)=>s+(x.quantity||0),0);
+
+  function showMsg(text, isError=false) {
+    const el = document.getElementById("msg");
+    el.className = "toast" + (isError ? " error" : "");
+    el.textContent = text;
+    el.style.display = "block";
+  }
+
+  function formatMoney(v) {
+    const n = Number(v || 0);
+    return n.toLocaleString("ru-RU", { style: "currency", currency: "RUB" });
+  }
+
+  async function loadOrders() {
+    const tbody = document.getElementById("rows");
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">Загрузка...</td></tr>`;
+    document.getElementById("msg").style.display = "none";
+
+    try {
+      const res = await fetch("/api/admin/orders", { headers: { "Accept":"application/json" }});
+      if (!res.ok) throw new Error("API /api/admin/orders вернул " + res.status);
+
+      const orders = await res.json();
+
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="muted">Заказов нет</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><a href="/admin-order.html?id=${encodeURIComponent(o.orderId)}"><b>${o.orderId}</b></a></td>
+          <td>${new Date(o.orderDate).toLocaleString("ru-RU")}</td>
+          <td>${escapeHtml(o.clientName || "—")}</td>
+          <td>${formatMoney(o.totalPrice)}</td>
+          <td><b>${escapeHtml(o.status || "—")}</b></td>
+          <td>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select id="st_${o.orderId}">
+                ${option("Принят", o.status)}
+                ${option("В обработке", o.status)}
+                ${option("Выдан", o.status)}
+              </select>
+              <button class="btn" onclick="setStatus(${o.orderId})">OK</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>`;
+      showMsg(String(e.message || e), true);
+    }
+  }
+
+  function option(v, current) {
+    const sel = (String(v) === String(current)) ? "selected" : "";
+    return `<option ${sel}>${v}</option>`;
+  }
+
+  async function setStatus(orderId) {
+    document.getElementById("msg").style.display = "none";
+    const status = document.getElementById("st_" + orderId).value;
+
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json", "Accept":"application/json" },
+        body: JSON.stringify({ status })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Не удалось сменить статус (${res.status}): ${text}`);
+      }
+
+      showMsg(`Статус заказа #${orderId} изменён на: ${status}`);
+      await loadOrders();
+    } catch (e) {
+      showMsg(String(e.message || e), true);
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  loadOrders();
+    </script>
+</body>
+</html>
