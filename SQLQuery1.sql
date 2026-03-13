@@ -1,6 +1,6 @@
 
 -- Создание базы данных
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'AutoPartsStore')
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'auto_parts_store')
 BEGIN
     CREATE DATABASE auto_parts_store;
 END
